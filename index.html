@@ -8327,7 +8327,7 @@ function openUserProfile(id){
         <button class="pf-back" style="position:static" onclick="closeUserProfile()">←</button>
         <div class="pf-main"><div class="pf-nick-row"><span class="pf-name">${a.username ? "@" + escapeHTML(a.username) : "Пользователь"}</span></div></div></div>
         <div class="pf-grid"><div class="pf-block"><div class="pf-block-head"><span>ПОДАРКИ</span><span>ID: ${a.id}</span></div>
-        <div class="pf-gifts-list">${nftCardHTML(nftOwnerLabel(a))}</div></div>
+        <div class="pf-gifts-list">${nftAllHTML(nftOwnerLabel(a))}</div></div>
         <div class="pf-block"><div class="pf-block-head"><span>ПОСТЫ</span></div>
         ${posts.length ? posts.map(p => `<div class="pf-post"><div class="pf-post-meta"><span>${pfFmtDate(p.ts)}</span></div><div class="pf-post-text">${escapeHTML(p.text)}</div>
         <div class="pf-post-actions">🤍 ${(p.likes||[]).length} · 💬 ${(p.comments||[]).length}</div></div>`).join("") : "Постов пока нет"}</div></div></div>`;
@@ -8351,14 +8351,120 @@ function nftOwnerLabel(acc){
     if(acc.id === OWNER_ID) return "@" + OWNER_USERNAME;
     return acc.username ? "@" + acc.username : "Пользователь";
 }
-function nftCardHTML(owner){
-    const o = escapeHTML(owner || nftOwnerLabel(getSessionAccount()));
-    return `<div class="nft" data-owner="${o}" onclick="nftClick(this)"><canvas width="480" height="700"></canvas>${nftTrees()}
+/* ---------- Коллекция NFT-подарков ---------- */
+const GIFTS=[
+ {id:"gift_august",name:"August 12th",val:1000,bg:"Space"},
+ {id:"gift_amnyam",name:"АмНям Киберпанк",val:1500,bg:"Неоновый тёмно-зелёный"},
+ {id:"gift_quasar",name:"Голубой Квазар",val:3000,bg:"Чёрный космос"},
+ {id:"gift_milkyway",name:"Млечный Путь",val:5000,bg:"Космическая туманность"}];
+const GIFT_BG={
+ gift_amnyam:"radial-gradient(circle at 50% 45%,#0e8a46 0%,#053d22 48%,#010f08 100%)",
+ gift_quasar:"radial-gradient(circle at 50% 50%,#06142a 0%,#010308 60%,#000 100%)",
+ gift_milkyway:"radial-gradient(ellipse at 28% 22%,#6a3bd1 0%,transparent 55%),radial-gradient(ellipse at 78% 78%,#1d4fd8 0%,transparent 60%),#0a0630"};
+const GIFT_BR={gift_amnyam:"#2dff7a",gift_quasar:"#4fb6ff",gift_milkyway:"#9a7bff"};
+const giftById=id=>GIFTS.find(x=>x.id===id)||GIFTS[0];
+const giftValText=v=>v+" Капиков (~"+String(v).replace(/\B(?=(\d{3})+(?!\d))/g,"\u00a0")+" ₽)";
+const NFTX={
+amnyam:{init:()=>({ph:"j",t0:performance.now(),ex:0,ey:0}),
+ draw(g,t,s){
+  const e=t-s.t0,P=625;let jy=0,sy=1,capY=0,capR=0,ex=0,ey=0,tg=0,wag=0;
+  if(s.ph==="j"){
+   if(e>=5000){s.ph="f";s.t0=t;return NFTX.amnyam.draw(g,t,s);}   // прыжки замирают
+   const p=(e%P)/P,a=4*p*(1-p);jy=-a*80;sy=1+.12*a-.14*Math.pow(1-a,8);
+   const an=t*.014;ex=Math.cos(an)*9;ey=Math.sin(an)*9;tg=Math.sin(t*.03);wag=1;   // вращение глаз, язык
+   s.ex=ex;s.ey=ey;
+  }else{
+   if(e<600){const p=(e%200)/200;capY=-4*p*(1-p)*26;capR=-.12*Math.sin(p*Math.PI);}   // 3 микро-прыжка кепки
+   else if(e<2100) ex=(Math.floor((e-600)/250)%2?-1:1)*9;                            // 3 раза вправо-влево
+   else if(e>=2400){s.ph="j";s.t0=t;}
+   s.ex+=(ex-s.ex)*.35;s.ey+=(ey-s.ey)*.35;
+  }
+  const cx=240,gy=540,TAU=6.283;
+  let gr=g.createRadialGradient(cx,400,10,cx,400,260);gr.addColorStop(0,"rgba(60,255,130,.35)");gr.addColorStop(1,"rgba(60,255,130,0)");
+  g.fillStyle=gr;g.fillRect(cx-280,120,560,560);
+  g.strokeStyle="#39ff88";g.lineWidth=3;g.shadowColor="#39ff88";g.shadowBlur=14;g.beginPath();g.moveTo(60,gy+6);g.lineTo(420,gy+6);g.stroke();g.shadowBlur=0;
+  g.fillStyle="rgba(0,0,0,"+(.4+jy/400)+")";g.beginPath();g.ellipse(cx,gy+4,95+jy*.3,13,0,0,TAU);g.fill();
+  g.save();g.translate(cx,gy+jy);g.scale(1/sy,sy);
+  g.fillStyle="#1fa34f";
+  [-1,1].forEach(d=>{g.save();g.translate(d*104,-90);g.rotate(d*(.5+.3*Math.sin(t*.012*wag+d)));g.beginPath();g.ellipse(0,0,16,34,0,0,TAU);g.fill();g.restore();
+   g.beginPath();g.ellipse(d*46,-8,32,14,0,0,TAU);g.fill();});
+  const bg=g.createRadialGradient(-30,-150,10,0,-95,120);bg.addColorStop(0,"#7dff9f");bg.addColorStop(1,"#1fb85a");
+  g.fillStyle=bg;g.shadowColor="#39ff88";g.shadowBlur=18;g.beginPath();g.ellipse(0,-95,106,96,0,0,TAU);g.fill();g.shadowBlur=0;
+  [-1,1].forEach(d=>{const x=d*38,y=-122;
+   g.fillStyle="#fff";g.beginPath();g.arc(x,y,29,0,TAU);g.fill();
+   g.fillStyle="#0b1a10";g.beginPath();g.arc(x+s.ex,y+s.ey,12,0,TAU);g.fill();
+   g.fillStyle="#fff";g.beginPath();g.arc(x+s.ex-4,y+s.ey-4,4,0,TAU);g.fill();});
+  g.fillStyle="#3a0b1c";g.beginPath();g.ellipse(0,-66,36,22,0,0,Math.PI);g.fill();
+  const L=18+10*tg,wx=8*tg;
+  g.fillStyle="#ff5c8a";g.beginPath();g.moveTo(-13,-66);g.quadraticCurveTo(-13+wx,-60+L,wx*.6,-58+L);g.quadraticCurveTo(13+wx,-60+L,13,-66);g.closePath();g.fill();
+  g.save();g.translate(0,-178+capY);g.rotate(capR);
+  g.fillStyle="#1d1d24";g.beginPath();g.ellipse(18,4,88,13,0,0,TAU);g.fill();
+  g.fillStyle="#0c0c0f";g.beginPath();g.ellipse(0,0,74,52,0,Math.PI,TAU);g.fill();
+  g.strokeStyle="#39ff88";g.lineWidth=2;g.shadowColor="#39ff88";g.shadowBlur=8;g.stroke();g.shadowBlur=0;
+  g.fillStyle="#39ff88";g.font="800 26px sans-serif";g.textAlign="center";g.fillText("R.B",0,-18);
+  g.restore();g.restore();
+ }},
+quasar:{init:()=>({}),
+ draw(g,t){
+  const T=t/1000,cx=240,cy=350,r=44+7*Math.sin(T*2.2),H=300;
+  g.globalCompositeOperation="lighter";g.lineCap="round";
+  [-1,1].forEach(d=>{
+   const lg=g.createLinearGradient(0,cy,0,cy+d*H);
+   lg.addColorStop(0,"rgba(255,255,255,.95)");lg.addColorStop(.5,"rgba(120,200,255,.5)");lg.addColorStop(1,"rgba(60,140,255,0)");
+   g.strokeStyle=lg;g.shadowColor="#66ccff";g.shadowBlur=12;g.globalAlpha=1;g.lineWidth=3;
+   g.beginPath();g.moveTo(cx,cy);g.lineTo(cx,cy+d*H);g.stroke();     // прямой джет
+   g.lineWidth=2.4;g.globalAlpha=.3;
+   for(let k=0;k<5;k++){                                              // быстрое вращение + размытие движения
+    const tt=T-k*.0035,lean=.1*Math.sin(tt*1.3+(d>0?Math.PI:0));      // медленное «раскачивание»
+    g.beginPath();
+    for(let h=0;h<=H;h+=10){const x=cx+lean*h+(3+h*.09)*Math.sin(380*tt-h*.045*d);h?g.lineTo(x,cy+d*h):g.moveTo(x,cy);}
+    g.stroke();
+   }
+  });
+  g.shadowBlur=0;g.globalAlpha=1;
+  const gl=g.createRadialGradient(cx,cy,0,cx,cy,r*3.4);
+  gl.addColorStop(0,"rgba(255,255,255,1)");gl.addColorStop(.18,"rgba(255,255,255,.95)");gl.addColorStop(.32,"rgba(140,215,255,.7)");gl.addColorStop(.6,"rgba(40,120,255,.22)");gl.addColorStop(1,"rgba(0,60,255,0)");
+  g.fillStyle=gl;g.beginPath();g.arc(cx,cy,r*3.4,0,6.283);g.fill();
+  g.fillStyle="#fff";g.shadowColor="#88ddff";g.shadowBlur=40;g.beginPath();g.arc(cx,cy,r*.7,0,6.283);g.fill();
+  g.shadowBlur=0;g.globalCompositeOperation="source-over";
+ }},
+milkyway:{
+ init(vb,alive){
+  const w=vb.x1-vb.x0,h=vb.y1-vb.y0,s={st:[],d:Array.from({length:160},()=>({x:vb.x0+Math.random()*w,y:vb.y0+Math.random()*h,s:.3+Math.random()*.9,p:Math.random()*6.28,c:220+Math.random()*80,r:.8+Math.random()*2.4}))};
+  const iv=setInterval(()=>{if(!alive()){clearInterval(iv);return;}   // ровно раз в 10 секунд — новая звезда
+   s.st.push({x:vb.x0+Math.random()*w,y:vb.y0+Math.random()*h,t0:performance.now()});},10000);
+  return s;
+ },
+ draw(g,t,s){
+  const T=t/1000;g.globalCompositeOperation="lighter";
+  s.d.forEach(p=>{const x=p.x+Math.sin(T*p.s+p.p+p.y*.012)*34,y=p.y+Math.cos(T*p.s*.8+p.p+p.x*.01)*26;
+   g.fillStyle="hsla("+(p.c+30*Math.sin(T*.3+p.p))+",90%,68%,"+(.3+.25*Math.sin(T*p.s*1.5+p.p))+")";
+   g.beginPath();g.arc(x,y,p.r,0,6.283);g.fill();});
+  s.st=s.st.filter(q=>t-q.t0<1500);
+  s.st.forEach(q=>{const e=t-q.t0,a=e<120?e/120:1-(e-120)/1380,R=6+30*a*a;   // вспышка → плавное угасание за 1.5 с
+   const gr=g.createRadialGradient(q.x,q.y,0,q.x,q.y,R*2.5);gr.addColorStop(0,"rgba(255,255,255,"+a+")");gr.addColorStop(1,"rgba(255,255,255,0)");
+   g.fillStyle=gr;g.beginPath();g.arc(q.x,q.y,R*2.5,0,6.283);g.fill();
+   g.strokeStyle="rgba(255,255,255,"+a+")";g.lineWidth=2;g.beginPath();g.moveTo(q.x-R*1.6,q.y);g.lineTo(q.x+R*1.6,q.y);g.moveTo(q.x,q.y-R*1.6);g.lineTo(q.x,q.y+R*1.6);g.stroke();});
+  g.globalCompositeOperation="source-over";
+ }}};
+function nftxRun(cv,id,alive){
+  const X=NFTX[id.slice(5)];if(!X) return;
+  const g=cv.getContext("2d"),W=cv.width,H=cv.height,k=Math.min(W/480,H/700),ox=W/2-240*k,oy=H/2-350*k;
+  const vb={x0:-ox/k,y0:-oy/k,x1:(W-ox)/k,y1:(H-oy)/k},s=X.init(vb,alive);
+  (function f(t){if(!alive()) return;g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,W,H);g.setTransform(k,0,0,k,ox,oy);X.draw(g,t,s,vb);requestAnimationFrame(f);})(performance.now());
+}
+function nftCardHTML(owner,gid){
+    gid = gid || "gift_august";
+    const o = escapeHTML(owner || nftOwnerLabel(getSessionAccount())), old = gid === "gift_august";
+    const st = old ? "" : ` style="background:${GIFT_BG[gid]};border-color:${GIFT_BR[gid]}"`;
+    return `<div class="nft" data-owner="${o}" data-gift="${gid}"${st} onclick="nftClick(this)"><canvas width="480" height="700"></canvas>${old ? nftTrees() : ""}
         <div class="rib">подарок</div><button class="nbtn" onclick="event.stopPropagation();nftView(this)">Посмотреть</button></div>`;
 }
+function nftAllHTML(owner){ return GIFTS.map(x => nftCardHTML(owner, x.id)).join(""); }
 function nftInit(root){
     root.querySelectorAll(".nft").forEach(card => {
         if(card._on) return; card._on = true;
+        if(card.dataset.gift && card.dataset.gift !== "gift_august"){ nftxRun(card.querySelector("canvas"), card.dataset.gift, () => card.isConnected); return; }
         const cv = card.querySelector("canvas"), g = cv.getContext("2d");
         const stars = Array.from({length:70}, () => ({ x:Math.random()*480, y:Math.random()*520, r:Math.random()*1.6+.6, p:Math.random()*6.28, sp:.8+Math.random()*2 }));
         const mets = [], sparks = [];
@@ -8435,22 +8541,25 @@ function nftView(btn){
     const src = btn && btn.closest ? btn.closest(".nft") : null;
     const owner = (src && src.dataset.owner) || nftOwnerLabel(getSessionAccount());
     const srcRect = src ? src.getBoundingClientRect() : null;
+    const gid = (src && src.dataset.gift) || "gift_august", G = giftById(gid);
 
     const ov = document.createElement("div");
     ov.className = "nftv"; ov.id = "nftViewer";
     ov.innerHTML = `<button class="nftv-close" aria-label="Закрыть" onclick="nftViewClose()">✕</button>
         <div class="nftv-content">
-            <div class="nftv-title">August 12th</div>
-            <div class="nftv-stage" id="nftvStage">${nftCardHTML(owner)}</div>
+            <div class="nftv-title">${escapeHTML(G.name)}</div>
+            <div class="nftv-stage" id="nftvStage">${nftCardHTML(owner, gid)}</div>
             <div class="nftv-hint">Свайпните вниз — характеристики ↓</div>
             <div class="nftv-specs">
                 <div class="nftv-row"><span>Владелец</span><span>${escapeHTML(owner)}</span></div>
-                <div class="nftv-row"><span>Фон</span><span>Space</span></div>
+                <div class="nftv-row"><span>От кого</span><span id="nftvFrom">—</span></div>
+                <div class="nftv-row"><span>Фон</span><span>${escapeHTML(G.bg)}</span></div>
                 <div class="nftv-row"><span>Количество</span><span>1 / ∞</span></div>
-                <div class="nftv-row"><span>Ценность</span><span>1000 Капиков (~1 000 ₽)</span></div>
+                <div class="nftv-row"><span>Ценность</span><span>${giftValText(G.val)}</span></div>
             </div>
         </div>`;
     document.body.appendChild(ov);
+    if(window.nftFromFetch) window.nftFromFetch(G.name).then(v => { const el = ov.querySelector("#nftvFrom"); if(el) el.textContent = v; });
 
     const stage = ov.querySelector("#nftvStage"), card = stage.querySelector(".nft");
     const sc = Math.max(.6, Math.min(1.7, (window.innerWidth - 40) / 240, (window.innerHeight * .52) / 350));
@@ -8503,7 +8612,7 @@ function nftViewClose(){
         await _render();
         const box = pfEl("pfGiftList"), d = pfLoad();
         const others = d.gifts.filter(g => g !== "August 12th");
-        box.innerHTML = nftCardHTML(nftOwnerLabel(getSessionAccount())) + others.map(g => `<div class="pf-gift">${escapeHTML(String(g))}</div>`).join("");
+        box.innerHTML = nftAllHTML(nftOwnerLabel(getSessionAccount())) + others.map(g => `<div class="pf-gift">${escapeHTML(String(g))}</div>`).join("");
         nftInit(box);
     };
     const _pub = pfPublish;
@@ -8651,7 +8760,7 @@ window.openUserProfile=async function(id){
     <button class="pf-back" style="position:fixed;top:10px;left:10px;z-index:3" onclick="closeUserProfile()">←</button>
     <div class="avatar up-ava">${u.id}</div><div class="pf-main"><div class="pf-nick-row"><span class="pf-name">${nm}</span></div>
     <button class="btn primary" style="margin-top:10px" onclick="openCloudChat(${u.id},'${escapeHTML(u.username||"")}')">💬 Чат</button></div></div>
-    <div class="pf-grid"><div class="pf-block"><div class="pf-block-head"><span>ПОДАРКИ</span><span>ID: ${u.id}</span></div><div class="pf-gifts-list">${nftCardHTML("@"+(u.username||u.id))}</div></div>
+    <div class="pf-grid"><div class="pf-block"><div class="pf-block-head"><span>ПОДАРКИ</span><span>ID: ${u.id}</span></div><div class="pf-gifts-list">${nftAllHTML("@"+(u.username||u.id))}</div></div>
     <div class="pf-block"><div class="pf-block-head"><span>ПОСТЫ</span></div>${posts.length?posts.map(p=>`<div class="pf-post"><div class="pf-post-meta"><span>${pfFmtDate(p.ts)}</span></div><div class="pf-post-text">${escapeHTML(p.text)}</div></div>`).join(""):"Постов пока нет"}</div></div></div>`;
   ov.classList.add("show"); ov.scrollTop=0; pfSyncScroll(); nftInit(ov);
 };
@@ -8706,26 +8815,38 @@ function meteors(c){
 }
 const g=document.createElement("div"); g.id="giftSheet";
 g.innerHTML=`<div class="gs-bg" onclick="closeGiftSheet()"></div><div class="gs-panel" id="gsPanel"><div class="gs-grip"></div>
- <div class="gs-title">🎁 Инвентарь подарков</div><div class="gs-card"><canvas id="gsCanvas"></canvas><div class="gs-name">August 12th</div></div>
+ <div class="gs-title">🎁 Инвентарь подарков</div><div class="gs-pick" id="gsPick" style="display:flex;gap:8px;overflow-x:auto;padding:0 0 10px">${GIFTS.map(x=>`<button data-id="${x.id}" onclick="gsShow('${x.id}')" style="flex:none;padding:7px 12px;border-radius:14px;border:1px solid #8f7bd6;background:transparent;color:inherit;font-size:13px">${x.name}</button>`).join("")}</div><div class="gs-card" id="gsCardBox"><canvas id="gsCanvas"></canvas><div class="gs-name" id="gsName">August 12th</div></div>
  <div class="gs-hint">Свайпни вниз ↓ характеристики</div>
  <table class="gs-table" id="gsTable"></table>
  <button class="btn primary gs-send" onclick="sendGift()">Отправить подарок</button></div>`;
 document.body.appendChild(g);
+window.nftFromFetch=async function(name){
+  let from="—";
+  if(myId){ try{ const {data}=await sb.from("gifts").select("from_username").eq("to_id",myId).eq("name",name).order("created_at",{ascending:false}).limit(1); if(data&&data[0]) from="@"+data[0].from_username; }catch(e){} }
+  return from;
+};
+let gsSel="gift_august",gsTok=0;
+window.gsShow=function(id){
+  gsSel=id; const G=giftById(id),o=$("gsCanvas"),c=o.cloneNode(); o.replaceWith(c); cancelAnimationFrame(raf); const my=++gsTok;
+  $("gsName").textContent=G.name; $("gsCardBox").style.background=GIFT_BG[id]||"#050819";
+  document.querySelectorAll("#gsPick button").forEach(b=>{b.style.background=b.dataset.id===id?"#8f7bd6":"transparent";});
+  if(id==="gift_august") meteors(c); else { c.width=c.clientWidth||340; c.height=c.clientHeight||320; nftxRun(c,id,()=>my===gsTok&&g.classList.contains("open")); }
+  fillTable();
+};
 async function fillTable(){
-  const me=(getSessionAccount()||{}).username||"—"; let from="—";
-  if(myId){ const {data}=await sb.from("gifts").select("from_username").eq("to_id",myId).order("created_at",{ascending:false}).limit(1); if(data&&data[0]) from="@"+data[0].from_username; }
-  $("gsTable").innerHTML=[["Владелец","@"+me],["От кого",from],["Фон","Space"],["Количество","1 / ∞"],["Ценность","1000 Капиков (~1 000 ₽)"]].map(r=>`<tr><td>${r[0]}</td><td>${escapeHTML(r[1])}</td></tr>`).join("");
+  const G=giftById(gsSel), me=(getSessionAccount()||{}).username||"—", from=await window.nftFromFetch(G.name);
+  $("gsTable").innerHTML=[["Владелец","@"+me],["От кого",from],["Фон",G.bg],["Количество","1 / ∞"],["Ценность",giftValText(G.val)]].map(r=>`<tr><td>${r[0]}</td><td>${escapeHTML(r[1])}</td></tr>`).join("");
 }
-window.openGiftSheet=function(){ g.classList.add("open"); $("gsPanel").scrollTop=0; fillTable(); setTimeout(()=>meteors($("gsCanvas")),50); };
-window.closeGiftSheet=function(){ g.classList.remove("open"); cancelAnimationFrame(raf); };
+window.openGiftSheet=function(){ g.classList.add("open"); $("gsPanel").scrollTop=0; setTimeout(()=>gsShow(gsSel),50); };
+window.closeGiftSheet=function(){ g.classList.remove("open"); gsTok++; cancelAnimationFrame(raf); };
 $("gsPanel").addEventListener("scroll",e=>$("gsTable").classList.toggle("in",e.target.scrollTop>40));
 window.sendGift=async function(){
   const to=peers[currentChat]; if(!to||!myId){alert("Подарки можно отправлять пользователям из поиска (облачные чаты).");return;}
-  const un=(getSessionAccount()||{}).username||"id"+myId;
-  await sb.from("gifts").insert({from_id:myId,from_username:un,to_id:to,name:"August 12th"});
-  await sb.from("messages").insert({sender_id:myId,sender_username:un,recipient_id:to,text:"🎁 Подарок «August 12th»"});
-  (chats[currentChat]=chats[currentChat]||[]).push({text:"🎁 Подарок «August 12th»",mine:true,time:timeNow()}); saveChats();
-  renderMessageBubble({text:"🎁 Подарок «August 12th»",mine:true,time:timeNow()}); closeGiftSheet();
+  const un=(getSessionAccount()||{}).username||"id"+myId, GN=giftById(gsSel).name;
+  await sb.from("gifts").insert({from_id:myId,from_username:un,to_id:to,name:GN});
+  await sb.from("messages").insert({sender_id:myId,sender_username:un,recipient_id:to,text:"🎁 Подарок «"+GN+"»"});
+  (chats[currentChat]=chats[currentChat]||[]).push({text:"🎁 Подарок «"+GN+"»",mine:true,time:timeNow()}); saveChats();
+  renderMessageBubble({text:"🎁 Подарок «"+GN+"»",mine:true,time:timeNow()}); closeGiftSheet();
 };
 
 /* ---- RUB Video: лёгкая карточка ---- */
